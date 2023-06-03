@@ -1,0 +1,7 @@
+[elasticsearch]
+elasticsearch1 ansible_host=172.31.1.6
+elasticsearch2 ansible_host=172.31.1.8
+elasticsearch3 ansible_host=172.31.1.10
+
+[kibana]
+kibana1  ansible_host=

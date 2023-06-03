@@ -1,0 +1,36 @@
+---
+- name: Import the public key used by the package management system
+  apt_key:
+    url: "https://artifacts.elastic.co/GPG-KEY-elasticsearch"
+    state: present
+- name: installing Kibana
+  apt:
+  #deb: "https://artifacts.elastic.co/downloads/kibana/kibana-6.8.12-amd64.deb"
+  #deb: "https://artifacts.elastic.co/downloads/kibana/kibana-7.12.1-amd64.deb"
+    deb: "https://artifacts.elastic.co/downloads/kibana/kibana-8.1.0-amd64.deb"
+- name: Configure Kibana
+  template:
+    src: kibana.yml.j2
+    dest: /etc/kibana/kibana.yml
+    backup: true
+
+- name: Reload systemd config
+  systemd:
+    daemon_reload: yes
+
+- name: Enable service kibana
+  systemd:
+    name: kibana
+    enabled: yes
+
+- name: Start service kibana
+  service:
+    name: kibana
+    state: started
+
+- name: Setting elasticsearch password in keystore.path
+  shell: |
+    echo "{{ elastic_password }}" | /usr/share/kibana/bin/kibana-keystore add --stdin -f elasticsearch.password
+  notify:
+    - restart kibana
+

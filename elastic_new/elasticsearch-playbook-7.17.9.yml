@@ -1,0 +1,13 @@
+#Sample command
+#ansible-playbook playbooks/elasticsearch-playbook-7.17.9.yml -i inventory/hosts-msa2-eln
+---
+- name: run tasks on elasticsearch hosts
+  hosts: elasticsearch 
+  user: ydxyokogawa
+  become: yes
+  vars_files:
+    - "/home/elnadmin/elastic_setup/ansible/vars/elasticsearch-7.17.9.yml"
+  roles:
+    - "/home/elnadmin/elastic_setup/ansible/roles/elasticsearch-7.17.9"
+  #tasks: 
+  #  - debug: var=test

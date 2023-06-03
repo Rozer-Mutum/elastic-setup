@@ -1,0 +1,33 @@
+---
+- name: install Openjdk-11-jdk
+  apt:
+    pkg: openjdk-11-jdk 
+    update_cache: yes
+- name: Import the public key used by the package management system
+  apt_key: 
+    url: "https://artifacts.elastic.co/GPG-KEY-elasticsearch" 
+    state: present
+- name: installing elasticsearch
+  apt:
+    deb: "https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-7.17.9-amd64.deb"
+- name: change permissions
+  file:
+    path: "/var/lib/elasticsearch"
+    owner: elasticsearch
+    group: elasticsearch
+    state: directory
+    recurse: true
+- name: Configure elasticsearch
+  template:
+    src: elasticsearch.yml.j2
+    dest: /etc/elasticsearch/elasticsearch.yml 
+    backup: true
+- name: Making directory for path repo
+  file:
+    path: /mnt/elastic
+    state: directory
+    mode: '0777'
+- name: install certificate
+  import_tasks: certificate.yml
+  notify:
+    - restart elasticsearch

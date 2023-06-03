@@ -1,0 +1,5 @@
+#default
+kibana_server_name: "kibana7179"
+elastic_username: "kibana_system"
+elastic_password : "6-1VhAn52OiivCQG-8qR"
+elastic_host_ip: "http://10.126.10.148:9200"

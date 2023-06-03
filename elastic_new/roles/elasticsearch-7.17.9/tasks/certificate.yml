@@ -1,0 +1,107 @@
+---
+- name: Configure jvm option
+  template:
+    src: jvm.options.j2
+    dest: /etc/elasticsearch/jvm.options.d/jvm.options
+    backup: true
+- name: check certificate exist or not
+  stat:
+     path: /etc/elasticsearch/certs/elastic-certificates1.p12
+  register: st
+- debug:
+     var: st
+- name: create certificate file
+  shell: |
+    rm -f /usr/share/elasticsearch/elastic-stack-ca.p12 && ./bin/elasticsearch-certutil ca --out elastic-stack-ca.p12 --pass welcome
+  args:
+    chdir: /usr/share/elasticsearch
+  when: inventory_hostname in groups['elasticsearch'][0] and st.stat.exists != true
+- name: create ca certificate and pas
+  shell: |
+    rm -f /usr/share/elasticsearch/elastic-certificates.p12 && ./bin/elasticsearch-certutil cert --ca elastic-stack-ca.p12 --ca-pass welcome --out elastic-certificates.p12 --pass welcome
+  args:
+    chdir: /usr/share/elasticsearch
+  when: inventory_hostname in groups['elasticsearch'][0] and st.stat.exists != true
+- name: copy certificate
+  fetch:
+    src: /usr/share/elasticsearch/elastic-certificates.p12
+    dest: ./files/
+  when: inventory_hostname in groups['elasticsearch'][0] and st.stat.exists != true
+- name: copy certificate file on other two machine
+  copy:
+    src: ./files/elasticsearch1/usr/share/elasticsearch/elastic-certificates.p12
+    dest: /etc/elasticsearch/elastic-certificates.p12
+    mode: 0660
+    owner: root
+    group: elasticsearch
+- name: execute keystore command
+  shell: |
+    echo 'welcome' | ./bin/elasticsearch-keystore add xpack.security.transport.ssl.keystore.secure_password -f
+  args:
+    chdir:  /usr/share/elasticsearch
+  when: st.stat.exists != true
+- name: execute trutstore command
+  shell: |
+    echo 'welcome' | ./bin/elasticsearch-keystore add xpack.security.transport.ssl.truststore.secure_password -f
+  args:
+    chdir:  /usr/share/elasticsearch
+  when:  st.stat.exists != true
+
+- name: Reload systemd config
+  systemd:
+    daemon_reload: yes
+
+- name: Enable service elasticsearch
+  systemd:
+    name: elasticsearch
+    enabled: yes
+
+- name: Start service elasticsearch
+  service:
+    name: elasticsearch
+    state: started
+
+- name: Checking reset password file exits or not
+  stat:
+    path: /usr/share/elasticsearch/elastic_password_logs.txt
+  register: pwd
+  when: inventory_hostname in groups['elasticsearch'][0]
+
+- debug: 
+    var: pwd
+
+- name: Removing if exists
+  file:
+    path: /usr/share/elasticsearch/elastic_password_logs.txt
+    state: absent
+  when: inventory_hostname in groups['elasticsearch'][0] and pwd.stat.exists == true
+
+- name: Reseting the elastic passwords
+  shell: |-
+    newpassword=`/usr/share/elasticsearch/bin/elasticsearch-reset-password -u {{ item }} -bs`
+    echo "\"{{ item }}\": \"$newpassword\"" >> /usr/share/elasticsearch/elastic_password_logs.txt
+  loop:
+    - apm_system
+    - kibana_system
+    - kibana
+    - logstash_system
+    - beats_system
+    - remote_monitoring_user
+    - elastic
+  when: inventory_hostname in groups['elasticsearch'][0]
+
+- name: Extract the elastic passwords
+  shell: |-
+    varInputFile="/usr/share/elasticsearch/elastic_password_logs.txt"
+    varOutputFile="/usr/share/elasticsearch/elastic_password_output.json"
+    paste -sd, $varInputFile | sed 's/.*/{&}/' > $varOutputFile
+    #plain_json="$(sed 's/.*/{&}/' $varOutputFile)"
+    #echo $plain_json > $varOutputFile
+  when:  inventory_hostname in groups['elasticsearch'][0]
+
+- name: copy elastic pwd json to local
+  fetch:
+    src: /usr/share/elasticsearch/elastic_password_output.json
+    dest: ./files/
+  when: inventory_hostname in groups['elasticsearch'][0]
+

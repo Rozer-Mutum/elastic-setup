@@ -1,0 +1,8 @@
+#elasticsearch
+cluster_name: "elastic7179"
+path_data: "/var/lib/elasticsearch"
+path_repo: "/mnt/elastic"
+node_name: "{{inventory_hostname}}"
+node_hosts: '"172.31.1.6", "172.31.1.8", "172.31.1.10"'
+initial_master_node: '"172.31.1.6"'
+jvm_heap_size: "4g"

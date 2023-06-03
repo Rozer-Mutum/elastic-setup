@@ -1,0 +1,11 @@
+---
+- name: run tasks on kibana hosts
+  hosts: "kibana"
+  become: yes
+  vars_files:
+    - "/home/ytiyokogawa/DevOps-Team/ansible/vars/kibana-7.17.9.yml"
+  roles:
+   #- kibana
+    - /home/ytiyokogawa/DevOps-Team/ansible/roles/kibana-7.17.9
+  #tasks: 
+  #  - debug: var=test
